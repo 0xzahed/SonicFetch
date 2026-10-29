@@ -19,3 +19,6 @@
 # Test and temp artifacts
 /tmp/
 *.tmp
+
+# Local reference repository
+/rea/
