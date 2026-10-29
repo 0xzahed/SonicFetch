@@ -1,0 +1,21 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Editors and OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Environment and local overrides
+.env
+.env.*
+
+# Logs
+*.log
+
+# Test and temp artifacts
+/tmp/
+*.tmp
