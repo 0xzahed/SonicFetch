@@ -12,7 +12,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT"
-authors = ["SonicFetch Contributors"]
+authors = ["Abu Zahed (0xzahed)"]
 
 [workspace.dependencies]
 anyhow = "1.0.100"
