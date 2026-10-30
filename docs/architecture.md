@@ -1,7 +1,7 @@
 # SonicFetch Architecture
 
 Date: 2026-10-30
-Status: Phase B architecture finalization before implementation.
+Status: Architecture target checked against the current CLI prototype; not build-verified.
 
 ## 1. Scope and Context
 
@@ -12,28 +12,30 @@ Established requirements:
 - Persistence-backed queue, pause/resume, retries, and segmented transfers.
 - Security-first defaults and deterministic testing.
 
-Observed workspace reality:
-- SonicFetch currently contains architecture/research documents only.
-- No pre-existing Rust implementation is available to adapt.
+Implemented workspace:
+- Rust workspace contains core lifecycle types, a SQLite repository, an HTTP/HTTPS transfer engine, and a CLI binary named `sonicfetch`.
+- Active downloads use SQLite process leases so a second CLI invocation can pause, cancel, or wait before resuming the same task.
+- The graphical GTK4/libadwaita interface, background scheduler, and segmented transfers remain future work.
 
 ## 2. Selected Technology Stack
 
 Selected baseline:
 - Language: Rust (edition 2024)
 - UI: GTK4 + libadwaita
-- Async runtime: Tokio 1.48
-- HTTP: reqwest 0.12
+- Async runtime: Tokio 1.x
+- HTTP: reqwest 0.12 with rustls and native certificate roots
 - Persistence: SQLite via sqlx 0.8 (runtime tokio-rustls + sqlite)
-- Serialization: serde 1.0 + serde_json 1.0
+- Serialization: Serde 1.x
 - Logging/diagnostics: tracing 0.1 + tracing-subscriber 0.3
 - URL validation: url 2.x
-- Checksums: sha2 0.10
-- Temporary files: tempfile 3.x
 - Error modeling: thiserror 2.x
 - Cancellation primitives: tokio-util 0.7 (CancellationToken)
 
 Decision note:
-- Versions above are selected targets for initial implementation and will be locked in Cargo.toml/Cargo.lock during Phase C and beyond.
+- The manifests declare compatible version ranges; Cargo.lock is not present. Exact resolved versions and compilation remain unverified because Cargo is unavailable in this environment.
+- `sha2` remains deferred until checksum verification is implemented. `tempfile` is used only as an engine test dev-dependency; production transfers use explicit same-directory temporary paths for restart recovery.
+
+Declared direct dependency baselines (not a lockfile resolution): Rust 1.85; Tokio 1.48.0; reqwest 0.12.24; sqlx 0.8.6; Serde 1.0.228; tracing 0.1.41; tracing-subscriber 0.3.20; url 2.5.7; tokio-util 0.7.16; uuid 1.18.1; chrono 0.4.42; thiserror 2.0.17; anyhow 1.0.100; futures-util 0.3.31; libc 0.2.177. Engine tests use tempfile 3.23.0 as a dev-dependency. GTK4/libadwaita versions are not selected because no UI dependency has been added.
 
 ## 3. Architecture Principles
 
@@ -42,12 +44,12 @@ Established requirements:
 - No backend server; local desktop app only.
 - Explicit state machine and persistence-backed recovery.
 
-Implementation proposal:
+Current implementation and target boundaries:
 - Four-crate Cargo workspace:
   - sonicfetch-core: domain types, state machine, errors, policies
   - sonicfetch-engine: transfer orchestration, HTTP I/O, queue/scheduler
   - sonicfetch-storage: SQLite schema, migrations, repositories
-  - sonicfetch-desktop: GTK/libadwaita UI, notifications, user actions
+  - sonicfetch-desktop: CLI entry point today; planned GTK/libadwaita UI and notifications
 
 Rationale:
 - Keeps boundaries clear while avoiding excessive crate fragmentation.
@@ -56,15 +58,39 @@ Rationale:
 
 ```mermaid
 flowchart LR
-    UI[sonicfetch-desktop GTK4/libadwaita] --> CORE[sonicfetch-core]
-    UI --> ENGINE[sonicfetch-engine]
+    CLI[sonicfetch CLI] --> CORE[sonicfetch-core]
+    UI[Future GTK4/libadwaita UI] --> CORE
+    UI --> ENGINE
+    CLI --> ENGINE[sonicfetch-engine]
     ENGINE --> CORE
     ENGINE --> STORAGE[sonicfetch-storage SQLite]
     STORAGE --> CORE
     ENGINE --> NET[HTTP via reqwest]
     ENGINE --> FS[Safe temp/final file handling]
-    UI --> EVENTS[Event stream and progress updates]
+    CLI --> EVENTS[Event stream and progress updates]
     ENGINE --> EVENTS
+```
+
+## 4.1 Component dependency boundaries
+
+```mermaid
+flowchart LR
+    CORE[sonicfetch-core]
+    STORAGE[sonicfetch-storage]
+    ENGINE[sonicfetch-engine]
+    APP[sonicfetch CLI / future GTK UI]
+    HTTP[reqwest + rustls]
+    DB[SQLite through sqlx]
+    FS[local filesystem]
+    APP --> CORE
+    APP --> ENGINE
+    APP --> STORAGE
+    ENGINE --> CORE
+    ENGINE --> STORAGE
+    ENGINE --> HTTP
+    ENGINE --> FS
+    STORAGE --> CORE
+    STORAGE --> DB
 ```
 
 ## 5. Segmented Transfer Coordination
@@ -98,3 +124,4 @@ Data-flow requirements:
 - No claims of acceleration when server/network cannot benefit.
 - Fallback path to single-stream is required and first-class.
 - Completion state is only allowed after finalization and optional checksum verification succeed.
+- Browser integration and Site Grabber remain opt-in proposals; no browser activity is collected by the current prototype.

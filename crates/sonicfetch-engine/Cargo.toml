@@ -7,13 +7,17 @@ license.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-thiserror.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
-serde.workspace = true
 url.workspace = true
 tracing.workspace = true
 uuid.workspace = true
 chrono.workspace = true
+reqwest.workspace = true
+futures-util = "0.3.31"
+libc.workspace = true
 sonicfetch-core = { path = "../sonicfetch-core" }
 sonicfetch-storage = { path = "../sonicfetch-storage" }
+
+[dev-dependencies]
+tempfile = "3.23.0"

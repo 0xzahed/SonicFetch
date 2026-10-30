@@ -1,7 +1,7 @@
 # Database Schema (SQLite)
 
 Date: 2026-10-30
-Status: Initial normalized schema for SonicFetch persistence.
+Status: Schema for the CLI prototype and planned queue features. Download rows are currently used; history, categories, segments, and settings are not wired to application APIs yet.
 
 ## 1. Design Goals
 
@@ -39,6 +39,7 @@ Columns:
 - next_retry_at TEXT
 - error_code TEXT
 - error_message TEXT
+- worker_pid INTEGER (active process lease; cleared when the worker stops or is recovered)
 - category_id TEXT
 - created_at TEXT NOT NULL
 - updated_at TEXT NOT NULL
@@ -129,7 +130,7 @@ Required indexes:
 
 ## 5. Transaction Boundaries
 
-Use transactions for:
+Required target transactions:
 - State transition + history append.
 - Segment progress batch update + aggregate bytes update.
 - Finalization transition (Verifying -> Completed/Failed) with integrity result.
@@ -137,10 +138,28 @@ Use transactions for:
 ## 6. Recovery Behavior
 
 Startup recovery algorithm:
-1. Load downloads in Preparing/Downloading/Retrying/Verifying.
-2. Validate temp files and segment metadata consistency.
-3. If consistent, move to Queued (or Paused depending policy).
-4. If inconsistent/corrupt metadata, move to NeedsAttention with diagnostic history entry.
+1. Load rows with worker leases or active states.
+2. Leave rows alone while their worker process is present.
+3. Clear dead worker leases and return unfinished work to Queued.
+4. For Verifying rows, compare final and temporary files to recognize a completed hard-link publication; mark unverifiable conflicts NeedsAttention.
+
+The current recovery path implements process-existence checks and finalization recovery. It does not yet validate segment metadata because segmented transfers are not implemented.
+
+## 6.1 Persistence and crash recovery
+
+```mermaid
+flowchart TD
+    A[Open SQLite pool] --> B[Create schema and add compatible columns]
+    B --> C[Read active rows and worker PID]
+    C --> D{Worker process is alive?}
+    D -->|Yes| E[Keep row and allow cross-process controls]
+    D -->|No| F{State is Verifying?}
+    F -->|No| G[Clear lease and restore Queued]
+    F -->|Yes| H{Published file matches finalization evidence?}
+    H -->|Yes| I[Completed]
+    H -->|Conflict or uncertain| J[NeedsAttention]
+    H -->|No published file| G
+```
 
 ## 7. Sensitive Data Policy
 

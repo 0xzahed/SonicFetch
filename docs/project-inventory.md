@@ -88,3 +88,34 @@ Completed:
 
 Next:
 - Finalize Phase B architecture documentation and implementation roadmap before introducing engine/UI code.
+
+## 8. Current workspace snapshot (2026-10-30)
+
+This addendum records the workspace after implementation work began; it does not replace the historical Phase A baseline above.
+
+Verified paths:
+- Research report: `docs/reverse-engineering-report.md`
+- Repository architecture report: `docs/repository-architecture.md`
+- Reference checkout: `rea/` (read-only; latest observed commit `1da304b28`)
+- Cargo workspace: core, engine, storage, and desktop/CLI crates
+- Migration: `migrations/0001_initial.sql`
+- Core has state transition unit tests, storage has recovery/state tests, and engine has local HTTP integration tests; none have been run in this environment. The top-level cross-crate and security test directories remain README-only.
+
+Current branch and preservation state:
+- SonicFetch branch: `main`; no upstream/ahead-behind status is reported.
+- The working tree contains ongoing edits to Cargo manifests, README, core/engine/storage/CLI sources, migration, architecture/feature documentation, and Debian packaging. Preserve them; do not reset or discard them.
+- Reference checkout `rea/` is on `main`, clean, and behind its origin by 12 commits. It has not been modified.
+- Both research reports are present and have not been edited by implementation work.
+
+Current implementation, source-inspected but not build-verified:
+- CLI source supports add/list/pause/resume/retry/cancel/remove.
+- SQLite-backed task records, process leases, stale-worker recovery, HTTP/HTTPS streaming, and validator-aware resume are present.
+- Native GTK4/libadwaita UI, segmented transfers, browser integration, scheduler, checksum verification, FTP/MMS, and comprehensive test infrastructure are not present.
+- A Debian package build script is present but has not been executed.
+
+Environment limitation:
+- `cargo`, `rustc`, and `rustfmt` are not installed in the current shell. Compilation, linting, Rust formatting, test results, and package output therefore remain unverified.
+
+Security preservation:
+- No Windows installer, patch archive, or unknown script was executed.
+- Do not infer IDM internals from the research reports; implement public network behavior independently.

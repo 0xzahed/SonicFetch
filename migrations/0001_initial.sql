@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS downloads (
   next_retry_at TEXT,
   error_code TEXT,
   error_message TEXT,
+  worker_pid INTEGER,
   category_id TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,

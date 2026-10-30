@@ -1,11 +1,11 @@
 # Component Map
 
 Date: 2026-10-30
-Status: Proposed component boundaries based on approved requirements.
+Status: Current crate boundaries and planned extensions.
 
 ## 1. Workspace Components
 
-Planned crates:
+Implemented crates:
 - crates/sonicfetch-core
 - crates/sonicfetch-engine
 - crates/sonicfetch-storage
@@ -22,28 +22,24 @@ Supporting directories:
 ## 2. Responsibilities
 
 sonicfetch-core:
-- Download states and transitions
-- Error taxonomy
-- Domain DTOs and event contracts
-- Retry policy and scheduler policy interfaces
+- Implemented: download states, transition validation, typed lifecycle errors
+- Planned: retry policy, scheduler contracts, and shared task DTOs
 
 sonicfetch-engine:
-- DownloadManager and task orchestration
-- TransferCoordinator and SegmentWorker lifecycle
-- HTTP request/response handling and fallback logic
-- Cooperative cancellation and progress aggregation
+- DownloadManager and single-task orchestration
+- HTTP request/response handling, validator resume, and cooperative cancellation
+- Structured progress events and atomic no-overwrite finalization
 
 sonicfetch-storage:
-- SQLite migrations
-- Repository interfaces and implementations
-- Crash recovery snapshots and history persistence
-- Settings/category CRUD
+- SQLite schema initialization and download record persistence
+- Worker process leases and interrupted-download recovery
+- Progress and state updates
+- Planned: categories, settings, segment records, and download history APIs
 
 sonicfetch-desktop:
-- GTK windows/views/dialogs
-- User action dispatch to engine
-- Event subscription and rendering
-- Notification dispatch
+- CLI command parsing and progress output
+- User actions for add/list/pause/resume/retry/cancel/remove
+- GTK windows, notifications, and desktop integration remain planned
 
 ## 3. Dependency Graph
 
@@ -63,20 +59,14 @@ flowchart LR
     ENGINE --> HTTP[reqwest]
     ENGINE --> TOKIO[Tokio]
     STORAGE --> SQLX[sqlx SQLite]
-    DESKTOP --> GTK[gtk4/libadwaita]
+    DESKTOP --> CLI[terminal interface]
 ```
 
 ## 4. Internal Engine Subcomponents
 
 Engine module map:
-- download_manager
-- download_task
-- queue_scheduler
-- transfer_coordinator
-- segment_worker
-- integrity_verifier
-- progress_aggregator
-- file_safety
+- Present: `manager.rs` single-stream manager and transfer worker
+- Planned: queue scheduler, transfer coordinator, segment workers, integrity verifier, and centralized file-safety module
 
 Cross-cutting services:
 - configuration_service
@@ -85,7 +75,7 @@ Cross-cutting services:
 
 ## 5. External Interface Contracts
 
-Engine-facing API (proposal):
+Engine API currently implemented:
 - add_download(request)
 - pause(download_id)
 - resume(download_id)
@@ -95,13 +85,19 @@ Engine-facing API (proposal):
 - subscribe_events()
 - list_downloads(filter)
 
-Storage-facing API (proposal):
-- create_download(record)
-- update_download_state(id, state)
+The Rust names are `DownloadManager::{add,pause,resume,cancel,retry,remove,subscribe,list}`. Add accepts a URL and destination path; the manager creates the ID.
+
+Storage API currently implemented:
+- create/get/list download rows
+- conditionally transition lifecycle state
+- update progress and validators
+- claim/release worker lease and recover interrupted tasks
+
+Storage APIs still planned:
 - upsert_segments(id, segments)
 - append_history(event)
-- restore_unfinished_downloads()
+- category/settings CRUD
 
-UI-facing API (proposal):
+Future UI-facing API:
 - state snapshots + incremental events
 - action response errors as typed user-actionable classes

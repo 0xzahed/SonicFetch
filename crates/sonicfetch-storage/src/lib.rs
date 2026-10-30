@@ -2,4 +2,4 @@ pub mod models;
 pub mod repository;
 
 pub use models::{DownloadRecord, SegmentRecord};
-pub use repository::DownloadRepository;
+pub use repository::SqliteDownloadRepository;

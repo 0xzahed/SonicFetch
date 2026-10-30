@@ -1,7 +1,7 @@
 # Architecture Decisions
 
 Date: 2026-10-30
-Format: Compact architecture decision records for initial release.
+Format: Architecture decision records. Decisions describe the target architecture; implementation status is called out where it differs.
 
 ## ADR-001: Rust as the implementation language
 
@@ -67,6 +67,8 @@ Trade-offs:
 
 ## ADR-006: State-machine enforced lifecycle
 
+Status: Normal repository transitions validate `StateTransition`; startup recovery may repair stale rows directly by design.
+
 Decision:
 - Implement explicit lifecycle transition validation in sonicfetch-core.
 
@@ -91,6 +93,8 @@ Trade-offs:
 
 ## ADR-008: Deterministic in-process test infrastructure
 
+Status: Test plan only; integration/security harnesses are not yet implemented.
+
 Decision:
 - Use a local deterministic fixture server and filesystem fault injection tests.
 
@@ -100,3 +104,42 @@ Why:
 
 Trade-offs:
 - Upfront investment in test harness before broad feature delivery.
+
+## ADR-009: Independent feature parity, not implementation cloning
+
+Decision:
+- Target comparable download-manager capabilities to IDM using documented public protocols and Linux-native integration.
+- Do not copy proprietary code, interface assets, branding, or claim knowledge of undocumented IDM internals.
+
+Why:
+- Feature parity answers the product goal while preserving the independent implementation and evidence boundary established by the research reports.
+- Dynamic segmentation, browser integration, scheduling, queues, categories, and Site Grabber can be designed around Linux and explicit consent.
+
+Trade-offs:
+- Full parity is a multi-milestone effort and will take longer than a single-stream downloader.
+- Some IDM behavior is Windows-specific or depends on protocols and browser APIs that differ on Linux.
+
+## ADR-010: Sensitive integrations are opt-in
+
+Decision:
+- Browser capture, clipboard monitoring, site crawling, scanner launching, and update installation are disabled until explicitly enabled by the user.
+- Never execute downloaded content automatically.
+
+Why:
+- These capabilities cross privacy or execution boundaries beyond ordinary HTTP transfers.
+- User-visible controls and narrow permissions preserve trust without ruling out useful IDM-style features.
+
+Trade-offs:
+- First-run setup requires explicit choices for integrations that some users expect to be automatic.
+
+## ADR-011: SQLite worker leases for the CLI prototype
+
+Decision:
+- Store the active process ID with each task and use conditional database updates to coordinate pause, cancel, resume, and recovery across CLI invocations.
+
+Why:
+- The prototype has no always-running daemon or IPC server, yet separate CLI invocations need safe queue control.
+- SQLite transactions provide a small local coordination surface without adding a backend service.
+
+Trade-offs:
+- PID reuse and crashes inside a still-running process need continued hardening; a future desktop process can replace this mechanism with in-process task ownership or a narrowly scoped local IPC protocol.

@@ -1,3 +1,3 @@
 pub mod manager;
 
-pub use manager::{DownloadCommand, DownloadManager};
+pub use manager::{DownloadEvent, DownloadManager};

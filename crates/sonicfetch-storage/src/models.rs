@@ -7,11 +7,15 @@ pub struct DownloadRecord {
     pub source_url: String,
     pub sanitized_filename: String,
     pub destination_dir: String,
+    pub temp_path: String,
+    pub final_path: String,
     pub state: DownloadState,
     pub downloaded_bytes: i64,
     pub total_bytes: Option<i64>,
     pub etag: Option<String>,
     pub last_modified: Option<String>,
+    pub error_message: Option<String>,
+    pub worker_pid: Option<i64>,
 }
 
 #[derive(Debug, Clone)]

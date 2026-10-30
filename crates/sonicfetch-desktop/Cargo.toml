@@ -5,12 +5,15 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+[[bin]]
+name = "sonicfetch"
+path = "src/main.rs"
+
 [dependencies]
 tracing.workspace = true
 tracing-subscriber.workspace = true
 sonicfetch-core = { path = "../sonicfetch-core" }
 sonicfetch-engine = { path = "../sonicfetch-engine" }
-
-[features]
-default = []
-gtk-ui = []
+sonicfetch-storage = { path = "../sonicfetch-storage" }
+tokio = { workspace = true, features = ["signal"] }
+uuid.workspace = true
